@@ -1,0 +1,68 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'nl.javadude.gradle.plugins:license-gradle-plugin:0.10.0'
+    }
+}
+
+allprojects {
+    group 'ru.datamart.connector.pxf'
+    apply plugin: 'license'
+}
+
+project('pxf-tarantool') {
+    apply plugin: 'java'
+    apply plugin: 'idea'
+
+    sourceCompatibility = 1.8
+
+    ext {
+        pxfVersion = '5.14.0'
+        commonsLangVersion = '3.11'
+        hadoopVersion = '2.9.2'
+        tarantoolCatridgeVersion = '0.4.3'
+        junitVersion = '5.7.0'
+        slf4jVersion = '1.7.30'
+        mockitoVersion = '3.10.0'
+        hamcrestVersion = '2.2'
+    }
+
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+        jcenter()
+    }
+
+    dependencies {
+        implementation "org.apache.commons:commons-lang3:${commonsLangVersion}"
+        implementation "org.greenplum.pxf.api:pxf-api:${pxfVersion}"
+        implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
+        implementation "io.tarantool:cartridge-driver:${tarantoolCatridgeVersion}"
+        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+        testImplementation "org.hamcrest:hamcrest-core:${hamcrestVersion}"
+        testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+
+    version = project_version
+
+    license {
+        header rootProject.file('license-header.txt')
+        strictCheck true
+    }
+
+    task copyDeps(type: Copy) {
+        from configurations.default
+        into "${buildDir}/libs"
+    }
+    assemble.dependsOn(copyDeps)
+}

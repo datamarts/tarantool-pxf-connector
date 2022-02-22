@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    PXF custom profiles definition file.
+    New profiles can be added in the form:
+        <profile>
+            <name>...</name>
+            <description>...</description>
+            <plugins>
+                <plugin_A>...</plugin_A>
+                <plugin_B>...</plugin_B>
+                ...
+            </plugins>
+         </profile>
+-->
+<profiles>
+    <profile>
+        <name>tarantool-upsert</name>
+        <description>A profile for upsert data into Tarantool Cluster</description>
+        <plugins>
+            <accessor>ru.datamart.pxf.plugins.tarantool.upsert.TarantoolAccessor</accessor>
+            <resolver>ru.datamart.pxf.plugins.tarantool.upsert.TarantoolResolver</resolver>
+        </plugins>
+        <optionMappings>
+            <mapping option="TARANTOOL_SERVER" property="tarantool.cartridge.server"/>
+            <mapping option="USER" property="tarantool.cartridge.user"/>
+            <mapping option="PASSWORD" property="tarantool.cartridge.password"/>
+            <mapping option="TIMEOUT_CONNECT" property="tarantool.cartridge.timeout.connect"/>
+            <mapping option="TIMEOUT_READ" property="tarantool.cartridge.timeout.read"/>
+            <mapping option="TIMEOUT_REQUEST" property="tarantool.cartridge.timeout.request"/>
+        </optionMappings>
+    </profile>
+    <profile>
+        <name>tarantool-delete</name>
+        <description>A profile for delete data in Tarantool Cluster</description>
+        <plugins>
+            <accessor>ru.datamart.pxf.plugins.tarantool.delete.TarantoolAccessor</accessor>
+            <resolver>ru.datamart.pxf.plugins.tarantool.delete.TarantoolResolver</resolver>
+        </plugins>
+        <optionMappings>
+            <mapping option="TARANTOOL_SERVER" property="tarantool.cartridge.server"/>
+            <mapping option="USER" property="tarantool.cartridge.user"/>
+            <mapping option="PASSWORD" property="tarantool.cartridge.password"/>
+            <mapping option="TIMEOUT_CONNECT" property="tarantool.cartridge.timeout.connect"/>
+            <mapping option="TIMEOUT_READ" property="tarantool.cartridge.timeout.read"/>
+            <mapping option="TIMEOUT_REQUEST" property="tarantool.cartridge.timeout.request"/>
+        </optionMappings>
+    </profile>
+</profiles>

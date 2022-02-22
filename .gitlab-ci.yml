@@ -1,0 +1,13 @@
+---
+include:
+  - project: 'datamart-deploy/common-deploy'
+    file: 
+      - '1.main.yml'
+      - '2.gradle.yml'
+      - '2.gradle_verify.yml' 
+      - '4.sonar_gradle_common.yml'
+      - '9.gradle_prepare_release.yml'
+      - '9.gradle_release.yml'
+      - '9.maven_post_release_wo_dtm.yml'
+
+

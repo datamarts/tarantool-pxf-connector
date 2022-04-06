@@ -27,6 +27,7 @@
             <mapping option="TIMEOUT_CONNECT" property="tarantool.cartridge.timeout.connect"/>
             <mapping option="TIMEOUT_READ" property="tarantool.cartridge.timeout.read"/>
             <mapping option="TIMEOUT_REQUEST" property="tarantool.cartridge.timeout.request"/>
+            <mapping option="BUFFER_SIZE" property="tarantool.cartridge.buffer.size"/>
         </optionMappings>
     </profile>
     <profile>
@@ -43,6 +44,7 @@
             <mapping option="TIMEOUT_CONNECT" property="tarantool.cartridge.timeout.connect"/>
             <mapping option="TIMEOUT_READ" property="tarantool.cartridge.timeout.read"/>
             <mapping option="TIMEOUT_REQUEST" property="tarantool.cartridge.timeout.request"/>
+            <mapping option="BUFFER_SIZE" property="tarantool.cartridge.buffer.size"/>
         </optionMappings>
     </profile>
 </profiles>

@@ -15,8 +15,9 @@
  */
 package ru.datamart.pxf.plugins.tarantool.client;
 
-import io.tarantool.driver.TarantoolClientConfig;
-import io.tarantool.driver.TarantoolClusterAddressProvider;
+
+import io.tarantool.driver.api.TarantoolClientConfig;
+import io.tarantool.driver.api.TarantoolClusterAddressProvider;
 
 public interface TarantoolConnectionProvider {
     TarantoolConnection provide(TarantoolClientConfig config,

@@ -15,7 +15,12 @@
  */
 package ru.datamart.pxf.plugins.tarantool.client;
 
-import io.tarantool.driver.*;
+
+import io.tarantool.driver.api.TarantoolClientConfig;
+import io.tarantool.driver.api.TarantoolClusterAddressProvider;
+import io.tarantool.driver.api.tuple.DefaultTarantoolTupleFactory;
+import io.tarantool.driver.core.ClusterTarantoolTupleClient;
+import io.tarantool.driver.core.ProxyTarantoolTupleClient;
 
 public class TarantoolConnectionProviderImpl implements TarantoolConnectionProvider {
     @Override

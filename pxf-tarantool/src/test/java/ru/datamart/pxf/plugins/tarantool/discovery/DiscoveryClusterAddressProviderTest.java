@@ -15,10 +15,10 @@
  */
 package ru.datamart.pxf.plugins.tarantool.discovery;
 
-import io.tarantool.driver.TarantoolClientConfig;
-import io.tarantool.driver.TarantoolServerAddress;
 import io.tarantool.driver.api.TarantoolClient;
+import io.tarantool.driver.api.TarantoolClientConfig;
 import io.tarantool.driver.api.TarantoolResult;
+import io.tarantool.driver.api.TarantoolServerAddress;
 import io.tarantool.driver.api.tuple.TarantoolTuple;
 import io.tarantool.driver.exceptions.TarantoolClientException;
 import org.junit.jupiter.api.BeforeEach;

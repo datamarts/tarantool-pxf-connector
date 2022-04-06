@@ -23,7 +23,7 @@ project('pxf-tarantool') {
         pxfVersion = '5.14.0'
         commonsLangVersion = '3.11'
         hadoopVersion = '2.9.2'
-        tarantoolCatridgeVersion = '0.4.3'
+        tarantoolCatridgeVersion = '0.7.0'
         junitVersion = '5.7.0'
         slf4jVersion = '1.7.30'
         mockitoVersion = '3.10.0'
@@ -34,7 +34,7 @@ project('pxf-tarantool') {
         flatDir {
             dirs 'libs'
         }
-        jcenter()
+        mavenCentral()
     }
 
     dependencies {

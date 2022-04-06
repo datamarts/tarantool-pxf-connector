@@ -23,15 +23,15 @@ You will get a `pxf-tarantool/build` folder with target jars. Copy them to each 
 ```shell script
 cp pxf-tarantool.jar /usr/lib/pxf/lib
 chown pxf:pxf /usr/lib/pxf/lib/pxf-tarantool.jar
-chmod 755 /usr/lib/pxf/lib/pxf-tarantool.jar
 
 cp msgpack-core-0.8.20.jar /usr/lib/pxf/lib/shared/
-chown pxf:pxf /usr/lib/pxf/lib/shared/msgpack-core-0.8.20.jar
-chmod 755 /usr/lib/pxf/lib/shared/msgpack-core-0.8.20.jar
+chown pxf:pxf /usr/lib/pxf/lib/shared/msgpack-core-0.9.0.jar
 
 cp cartridge-driver-0.4.3.jar /usr/lib/pxf/lib/shared/
-chown pxf:pxf /usr/lib/pxf/lib/shared/cartridge-driver-0.4.3
-chmod 755 /usr/lib/pxf/lib/shared/cartridge-driver-0.4.3
+chown pxf:pxf /usr/lib/pxf/lib/shared/cartridge-driver-0.7.0
+
+cp netty* /usr/lib/pxf/lib/shared/
+chown pxf:pxf /usr/lib/pxf/lib/shared/netty*
 ```
 
 Update profile.xml (`/var/lib/pxf/conf/pxf-profiles.xml`) by **adding** missing items from repository

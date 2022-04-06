@@ -15,24 +15,15 @@
  */
 package ru.datamart.pxf.plugins.tarantool.delete;
 
-import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnection;
-import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnectionProvider;
-import ru.datamart.pxf.plugins.tarantool.discovery.DiscoveryClientProvider;
-import io.tarantool.driver.DefaultTarantoolTupleFactory;
-import io.tarantool.driver.TarantoolClientConfig;
-import io.tarantool.driver.TarantoolClusterAddressProvider;
-import io.tarantool.driver.TarantoolServerAddress;
-import io.tarantool.driver.api.TarantoolClient;
-import io.tarantool.driver.api.TarantoolResult;
-import io.tarantool.driver.api.TarantoolTupleResult;
+import io.tarantool.driver.api.*;
+import io.tarantool.driver.api.metadata.TarantoolMetadataOperations;
 import io.tarantool.driver.api.space.TarantoolSpaceOperations;
+import io.tarantool.driver.api.tuple.DefaultTarantoolTupleFactory;
 import io.tarantool.driver.api.tuple.TarantoolTuple;
+import io.tarantool.driver.api.tuple.TarantoolTupleResult;
 import io.tarantool.driver.auth.SimpleTarantoolCredentials;
 import io.tarantool.driver.mappers.DefaultMessagePackMapper;
 import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory;
-import io.tarantool.driver.metadata.TarantoolIndexMetadata;
-import io.tarantool.driver.metadata.TarantoolIndexPartMetadata;
-import io.tarantool.driver.metadata.TarantoolMetadataOperations;
 import org.greenplum.pxf.api.OneRow;
 import org.greenplum.pxf.api.io.DataType;
 import org.greenplum.pxf.api.model.RequestContext;
@@ -45,6 +36,11 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnection;
+import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnectionProvider;
+import ru.datamart.pxf.plugins.tarantool.common.TestTarantoolIndexMetadata;
+import ru.datamart.pxf.plugins.tarantool.common.TestTarantoolIndexPartMetadata;
+import ru.datamart.pxf.plugins.tarantool.discovery.DiscoveryClientProvider;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -133,10 +129,10 @@ class TarantoolAccessorTest {
         lenient().when(discoveryClientProvider.provide(any(), any())).thenAnswer(invocation -> clientDiscovery);
         lenient().when(clientOperations.metadata()).thenReturn(tarantoolMetadataOperations);
 
-        TarantoolIndexMetadata primaryIndexMetadata = new TarantoolIndexMetadata();
-        primaryIndexMetadata.setIndexParts(Arrays.asList(new TarantoolIndexPartMetadata(0, "integer", "id"),
-                new TarantoolIndexPartMetadata(1, "string", "name"),
-                new TarantoolIndexPartMetadata(2, "integer", "bucket_id")));
+        TestTarantoolIndexMetadata primaryIndexMetadata = new TestTarantoolIndexMetadata();
+        primaryIndexMetadata.setIndexParts(Arrays.asList(new TestTarantoolIndexPartMetadata(0, "integer", "id"),
+                new TestTarantoolIndexPartMetadata(1, "string", "name"),
+                new TestTarantoolIndexPartMetadata(2, "integer", "bucket_id")));
         lenient().when(tarantoolMetadataOperations.getIndexById(Mockito.eq(SPACE), Mockito.eq(0))).thenReturn(Optional.of(primaryIndexMetadata));
         lenient().when(spaceOperations.delete(Mockito.any())).thenReturn(CompletableFuture.completedFuture(Mockito.mock(TarantoolTupleResult.class)));
 
@@ -187,9 +183,9 @@ class TarantoolAccessorTest {
     void shouldFailWhenColumnsSizeDiffer() {
         // arrange
         reset(tarantoolMetadataOperations);
-        TarantoolIndexMetadata primaryIndexMetadata = new TarantoolIndexMetadata();
-        primaryIndexMetadata.setIndexParts(Arrays.asList(new TarantoolIndexPartMetadata(0, "integer", "id"),
-                new TarantoolIndexPartMetadata(2, "integer", "bucket_id")));
+        TestTarantoolIndexMetadata primaryIndexMetadata = new TestTarantoolIndexMetadata();
+        primaryIndexMetadata.setIndexParts(Arrays.asList(new TestTarantoolIndexPartMetadata(0, "integer", "id"),
+                new TestTarantoolIndexPartMetadata(2, "integer", "bucket_id")));
         lenient().when(tarantoolMetadataOperations.getIndexById(Mockito.eq(SPACE), Mockito.eq(0))).thenReturn(Optional.of(primaryIndexMetadata));
 
         // act assert
@@ -201,10 +197,10 @@ class TarantoolAccessorTest {
     void shouldFailWhenColumnsNameDiffer() {
         // arrange
         reset(tarantoolMetadataOperations);
-        TarantoolIndexMetadata primaryIndexMetadata = new TarantoolIndexMetadata();
-        primaryIndexMetadata.setIndexParts(Arrays.asList(new TarantoolIndexPartMetadata(0, "integer", "id"),
-                new TarantoolIndexPartMetadata(1, "string", "wrong"),
-                new TarantoolIndexPartMetadata(2, "integer", "bucket_id")));
+        TestTarantoolIndexMetadata primaryIndexMetadata = new TestTarantoolIndexMetadata();
+        primaryIndexMetadata.setIndexParts(Arrays.asList(new TestTarantoolIndexPartMetadata(0, "integer", "id"),
+                new TestTarantoolIndexPartMetadata(1, "string", "wrong"),
+                new TestTarantoolIndexPartMetadata(2, "integer", "bucket_id")));
         lenient().when(tarantoolMetadataOperations.getIndexById(Mockito.eq(SPACE), Mockito.eq(0))).thenReturn(Optional.of(primaryIndexMetadata));
 
         // act assert
@@ -232,14 +228,14 @@ class TarantoolAccessorTest {
     }
 
     @Test
-    void shouldReturnFalseWhenExceptionDuringRequest() throws Exception {
+    void shouldFailWhenExceptionDuringRequest() throws Exception {
         // arrange
         when(spaceOperations.delete(Mockito.any())).thenThrow(new RuntimeException("Exception"));
 
         // act
         tarantoolDeleteAccessor.initialize(context);
         tarantoolDeleteAccessor.openForWrite();
-        assertFalse(tarantoolDeleteAccessor.writeNextObject(new OneRow(asList(1L, "test", 1))));
+        assertThrows(RuntimeException.class, () -> tarantoolDeleteAccessor.writeNextObject(new OneRow(asList(1L, "test", 1))));
     }
 
     @Test
@@ -252,8 +248,7 @@ class TarantoolAccessorTest {
         // act
         tarantoolDeleteAccessor.initialize(context);
         tarantoolDeleteAccessor.openForWrite();
-        tarantoolDeleteAccessor.writeNextObject(new OneRow(Arrays.asList(1L, "test", 1)));
-        tarantoolDeleteAccessor.writeNextObject(new OneRow(Arrays.asList(2L, "test2", 2)));
+        assertThrows(IllegalStateException.class, () -> tarantoolDeleteAccessor.writeNextObject(new OneRow(Arrays.asList(1L, "test", 1))));
         assertThrows(IllegalStateException.class, () -> tarantoolDeleteAccessor.closeForWrite());
 
         // assert
@@ -262,7 +257,7 @@ class TarantoolAccessorTest {
         verify(clientOperations).close();
         verifyNoMoreInteractions(clientOperations);
 
-        verify(spaceOperations, times(2)).delete(Mockito.any());
+        verify(spaceOperations, times(1)).delete(Mockito.any());
         verifyNoMoreInteractions(spaceOperations);
     }
 

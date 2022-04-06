@@ -15,22 +15,17 @@
  */
 package ru.datamart.pxf.plugins.tarantool.upsert;
 
-import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnection;
-import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnectionProvider;
-import ru.datamart.pxf.plugins.tarantool.discovery.DiscoveryClientProvider;
-import io.tarantool.driver.DefaultTarantoolTupleFactory;
-import io.tarantool.driver.TarantoolClientConfig;
-import io.tarantool.driver.TarantoolClusterAddressProvider;
-import io.tarantool.driver.TarantoolServerAddress;
-import io.tarantool.driver.api.TarantoolClient;
-import io.tarantool.driver.api.TarantoolResult;
-import io.tarantool.driver.api.TarantoolTupleResult;
+import io.tarantool.driver.api.*;
+import io.tarantool.driver.api.metadata.TarantoolFieldMetadata;
+import io.tarantool.driver.api.metadata.TarantoolMetadataOperations;
+import io.tarantool.driver.api.metadata.TarantoolSpaceMetadata;
 import io.tarantool.driver.api.space.TarantoolSpaceOperations;
+import io.tarantool.driver.api.tuple.DefaultTarantoolTupleFactory;
 import io.tarantool.driver.api.tuple.TarantoolTuple;
+import io.tarantool.driver.api.tuple.TarantoolTupleResult;
 import io.tarantool.driver.auth.SimpleTarantoolCredentials;
 import io.tarantool.driver.mappers.DefaultMessagePackMapper;
 import io.tarantool.driver.mappers.DefaultMessagePackMapperFactory;
-import io.tarantool.driver.metadata.*;
 import org.greenplum.pxf.api.OneRow;
 import org.greenplum.pxf.api.io.DataType;
 import org.greenplum.pxf.api.model.RequestContext;
@@ -43,6 +38,12 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnection;
+import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnectionProvider;
+import ru.datamart.pxf.plugins.tarantool.common.TestTarantoolFieldMetadata;
+import ru.datamart.pxf.plugins.tarantool.common.TestTarantoolIndexMetadata;
+import ru.datamart.pxf.plugins.tarantool.common.TestTarantoolIndexPartMetadata;
+import ru.datamart.pxf.plugins.tarantool.discovery.DiscoveryClientProvider;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -134,15 +135,15 @@ class TarantoolAccessorTest {
         lenient().when(discoveryClientProvider.provide(any(), any())).thenAnswer(invocation -> clientDiscovery);
         lenient().when(clientOperations.metadata()).thenReturn(tarantoolMetadataOperations);
 
-        TarantoolIndexMetadata primaryIndexMetadata = new TarantoolIndexMetadata();
-        primaryIndexMetadata.setIndexParts(Arrays.asList(new TarantoolIndexPartMetadata(0, "integer", "id"),
-                new TarantoolIndexPartMetadata(1, "string", "name"),
-                new TarantoolIndexPartMetadata(2, "integer", "bucket_id")));
+        TestTarantoolIndexMetadata primaryIndexMetadata = new TestTarantoolIndexMetadata();
+        primaryIndexMetadata.setIndexParts(Arrays.asList(new TestTarantoolIndexPartMetadata(0, "integer", "id"),
+                new TestTarantoolIndexPartMetadata(1, "string", "name"),
+                new TestTarantoolIndexPartMetadata(2, "integer", "bucket_id")));
 
         HashMap<String, TarantoolFieldMetadata> spaceMetadata = new HashMap<>();
-        spaceMetadata.put("id", new TarantoolFieldMetadata("id", "integer", 0));
-        spaceMetadata.put("name", new TarantoolFieldMetadata("name", "string", 1));
-        spaceMetadata.put("bucket_id", new TarantoolFieldMetadata("bucket_id", "integer", 2));
+        spaceMetadata.put("id", new TestTarantoolFieldMetadata("id", "integer", 0));
+        spaceMetadata.put("name", new TestTarantoolFieldMetadata("name", "string", 1));
+        spaceMetadata.put("bucket_id", new TestTarantoolFieldMetadata("bucket_id", "integer", 2));
 
         lenient().when(tarantoolSpaceMetadata.getSpaceFormatMetadata()).thenReturn(spaceMetadata);
         lenient().when(spaceOperations.getMetadata()).thenReturn(tarantoolSpaceMetadata);
@@ -186,8 +187,8 @@ class TarantoolAccessorTest {
     void shouldFailWhenColumnsSizeDiffer() {
         // arrange
         HashMap<String, TarantoolFieldMetadata> spaceMetadata = new HashMap<>();
-        spaceMetadata.put("id", new TarantoolFieldMetadata("id", "integer", 0));
-        spaceMetadata.put("bucket_id", new TarantoolFieldMetadata("bucket_id", "integer", 2));
+        spaceMetadata.put("id", new TestTarantoolFieldMetadata("id", "integer", 0));
+        spaceMetadata.put("bucket_id", new TestTarantoolFieldMetadata("bucket_id", "integer", 2));
         lenient().when(tarantoolSpaceMetadata.getSpaceFormatMetadata()).thenReturn(spaceMetadata);
 
         // act assert
@@ -199,9 +200,9 @@ class TarantoolAccessorTest {
     void shouldFailWhenColumnsNameDiffer() {
         // arrange
         HashMap<String, TarantoolFieldMetadata> spaceMetadata = new HashMap<>();
-        spaceMetadata.put("id", new TarantoolFieldMetadata("id", "integer", 0));
-        spaceMetadata.put("name", new TarantoolFieldMetadata("wrong", "string", 1));
-        spaceMetadata.put("bucket_id", new TarantoolFieldMetadata("bucket_id", "integer", 2));
+        spaceMetadata.put("id", new TestTarantoolFieldMetadata("id", "integer", 0));
+        spaceMetadata.put("name", new TestTarantoolFieldMetadata("wrong", "string", 1));
+        spaceMetadata.put("bucket_id", new TestTarantoolFieldMetadata("bucket_id", "integer", 2));
 
         lenient().when(tarantoolSpaceMetadata.getSpaceFormatMetadata()).thenReturn(spaceMetadata);
 
@@ -230,14 +231,14 @@ class TarantoolAccessorTest {
     }
 
     @Test
-    void shouldReturnFalseWhenExceptionDuringRequest() throws Exception {
+    void shouldFailWhenExceptionDuringRequest() throws Exception {
         // arrange
         when(spaceOperations.replace(Mockito.any())).thenThrow(new RuntimeException("Exception"));
 
         // act
         tarantoolDeleteAccessor.initialize(context);
         tarantoolDeleteAccessor.openForWrite();
-        assertFalse(tarantoolDeleteAccessor.writeNextObject(new OneRow(asList(1L, "test", 1))));
+        assertThrows(RuntimeException.class, () -> tarantoolDeleteAccessor.writeNextObject(new OneRow(asList(1L, "test", 1))));
     }
 
     @Test
@@ -250,8 +251,7 @@ class TarantoolAccessorTest {
         // act
         tarantoolDeleteAccessor.initialize(context);
         tarantoolDeleteAccessor.openForWrite();
-        tarantoolDeleteAccessor.writeNextObject(new OneRow(Arrays.asList(1L, "test", 1)));
-        tarantoolDeleteAccessor.writeNextObject(new OneRow(Arrays.asList(2L, "test2", 2)));
+        assertThrows(IllegalStateException.class, () -> tarantoolDeleteAccessor.writeNextObject(new OneRow(Arrays.asList(1L, "test", 1))));
         assertThrows(IllegalStateException.class, () -> tarantoolDeleteAccessor.closeForWrite());
 
         // assert
@@ -260,7 +260,7 @@ class TarantoolAccessorTest {
         verifyNoMoreInteractions(clientOperations);
 
         verify(spaceOperations).getMetadata();
-        verify(spaceOperations, times(2)).replace(Mockito.any());
+        verify(spaceOperations, times(1)).replace(Mockito.any());
         verifyNoMoreInteractions(spaceOperations);
     }
 

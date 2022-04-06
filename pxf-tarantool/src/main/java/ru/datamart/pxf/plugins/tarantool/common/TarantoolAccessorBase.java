@@ -15,27 +15,28 @@
  */
 package ru.datamart.pxf.plugins.tarantool.common;
 
-import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnection;
-import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnectionProvider;
-import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnectionProviderImpl;
-import ru.datamart.pxf.plugins.tarantool.discovery.DiscoveryClientProvider;
-import ru.datamart.pxf.plugins.tarantool.discovery.DiscoveryClusterAddressProvider;
-import io.tarantool.driver.ClusterTarantoolTupleClient;
-import io.tarantool.driver.TarantoolClientConfig;
-import io.tarantool.driver.TarantoolClusterAddressProvider;
-import io.tarantool.driver.TarantoolServerAddress;
+import io.tarantool.driver.api.TarantoolClientConfig;
+import io.tarantool.driver.api.TarantoolClusterAddressProvider;
 import io.tarantool.driver.api.TarantoolResult;
+import io.tarantool.driver.api.TarantoolServerAddress;
+import io.tarantool.driver.api.connection.TarantoolConnectionSelectionStrategies;
 import io.tarantool.driver.api.space.TarantoolSpaceOperations;
 import io.tarantool.driver.api.tuple.TarantoolTuple;
 import io.tarantool.driver.auth.SimpleTarantoolCredentials;
 import io.tarantool.driver.auth.TarantoolCredentials;
-import io.tarantool.driver.core.TarantoolConnectionSelectionStrategies;
+import io.tarantool.driver.core.ClusterTarantoolTupleClient;
 import org.apache.commons.lang3.StringUtils;
 import org.greenplum.pxf.api.OneRow;
 import org.greenplum.pxf.api.model.Accessor;
 import org.greenplum.pxf.api.model.BasePlugin;
 import org.greenplum.pxf.api.model.RequestContext;
+import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnection;
+import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnectionProvider;
+import ru.datamart.pxf.plugins.tarantool.client.TarantoolConnectionProviderImpl;
+import ru.datamart.pxf.plugins.tarantool.discovery.DiscoveryClientProvider;
+import ru.datamart.pxf.plugins.tarantool.discovery.DiscoveryClusterAddressProvider;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,6 +44,7 @@ public abstract class TarantoolAccessorBase extends BasePlugin implements Access
     private static final int DEFAULT_TIMEOUT_CONNECT = 5000;
     private static final int DEFAULT_TIMEOUT_READ = 5000;
     private static final int DEFAULT_TIMEOUT_REQUEST = 5000;
+    private static final int DEFAULT_BUFFER_SIZE = 5000;
 
     private static final String TARANTOOL_SERVER = "tarantool.cartridge.server";
     private static final String USER = "tarantool.cartridge.user";
@@ -50,6 +52,10 @@ public abstract class TarantoolAccessorBase extends BasePlugin implements Access
     private static final String TIMEOUT_CONNECT = "tarantool.cartridge.timeout.connect";
     private static final String TIMEOUT_READ = "tarantool.cartridge.timeout.read";
     private static final String TIMEOUT_REQUEST = "tarantool.cartridge.timeout.request";
+    private static final String BUFFER_SIZE = "tarantool.cartridge.buffer.size";
+
+    protected final Object monitor = new Object();
+
     protected String spaceName;
     protected TarantoolConnection connection;
     protected TarantoolSpaceOperations<TarantoolTuple, TarantoolResult<TarantoolTuple>> spaceOperations;
@@ -57,9 +63,10 @@ public abstract class TarantoolAccessorBase extends BasePlugin implements Access
     protected AtomicLong activeTasks = new AtomicLong();
     protected AtomicLong totalTasks = new AtomicLong();
     protected AtomicLong errorCount = new AtomicLong();
-    protected AtomicReference<Throwable> firstException = new AtomicReference(null);
+    protected AtomicReference<Throwable> firstException = new AtomicReference<>(null);
+    protected int bufferSize = DEFAULT_BUFFER_SIZE;
 
-    private DiscoveryClientProvider discoveryClientProvider = ClusterTarantoolTupleClient::new;
+    private DiscoveryClientProvider discoveryClientProvider = (config, routerAddress) -> new ClusterTarantoolTupleClient(config, Collections.singletonList(routerAddress));
     private TarantoolConnectionProvider tarantoolConnectionProvider = new TarantoolConnectionProviderImpl();
 
     private int connectTimeout;
@@ -80,6 +87,11 @@ public abstract class TarantoolAccessorBase extends BasePlugin implements Access
         String serverHostPort = configuration.get(TARANTOOL_SERVER);
         if (StringUtils.isBlank(serverHostPort)) {
             throw new IllegalArgumentException("TARANTOOL_SERVER property must be set");
+        }
+
+        String bufferSize = configuration.get(BUFFER_SIZE);
+        if (StringUtils.isNotBlank(bufferSize)) {
+            this.bufferSize = Integer.parseInt(bufferSize);
         }
 
         this.routerAddress = new TarantoolServerAddress(serverHostPort);
@@ -156,13 +168,17 @@ public abstract class TarantoolAccessorBase extends BasePlugin implements Access
             activeTasks.set(0);
             errorCount.set(0);
             firstException.set(null);
-            if (connection != null) {
-                connection.close();
-                connection = null;
-                spaceOperations = null;
-            }
+            closeConnectionIfOpened();
             LOG.info("Closed \"{}\" for write in \"{}\", segment: {}, total: {}",
                     context.getProfile(), spaceName, context.getSegmentId(), context.getTotalSegments());
+        }
+    }
+
+    protected void closeConnectionIfOpened() {
+        if (connection != null) {
+            connection.close();
+            connection = null;
+            spaceOperations = null;
         }
     }
 
@@ -172,5 +188,23 @@ public abstract class TarantoolAccessorBase extends BasePlugin implements Access
 
     public void setTarantoolConnectionProvider(TarantoolConnectionProvider tarantoolConnectionProvider) {
         this.tarantoolConnectionProvider = tarantoolConnectionProvider;
+    }
+
+    protected void waitUntilBufferFreed() throws InterruptedException {
+        while (activeTasks.get() >= bufferSize) {
+            synchronized (monitor) {
+                if (activeTasks.get() >= bufferSize) {
+                    monitor.wait();
+                }
+            }
+        }
+    }
+
+    protected void notifyIfBufferFreed() {
+        synchronized (monitor) {
+            if (activeTasks.get() <= bufferSize / 10) {
+                monitor.notify();
+            }
+        }
     }
 }

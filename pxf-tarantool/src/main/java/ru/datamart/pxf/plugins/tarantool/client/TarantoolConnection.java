@@ -17,8 +17,8 @@ package ru.datamart.pxf.plugins.tarantool.client;
 
 import io.tarantool.driver.api.TarantoolClient;
 import io.tarantool.driver.api.TarantoolResult;
-import io.tarantool.driver.api.TarantoolTupleFactory;
 import io.tarantool.driver.api.tuple.TarantoolTuple;
+import io.tarantool.driver.api.tuple.TarantoolTupleFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +48,9 @@ public final class TarantoolConnection implements Closeable {
     public void close() {
         try {
             client.close();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("Interrupted on close", e);
         } catch (Exception e) {
             LOGGER.error("Exception during closing tarantool client, ignored", e);
         }

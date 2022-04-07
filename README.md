@@ -18,21 +18,23 @@ You should have working GPDB or ADB cluster with installed PXF.
 
 ### INSTALL
 
-You will get a `pxf-tarantool/build` folder with target jars. Copy them to each GPDB or ADB host and delete the old one:
+You will get a `pxf-tarantool/build/libs` folder with target jars. Copy them to each GPDB or ADB host and delete the old one:
 
 ```shell script
-cp pxf-tarantool.jar /usr/lib/pxf/lib
-chown pxf:pxf /usr/lib/pxf/lib/pxf-tarantool.jar
+cp pxf-tarantool* /usr/lib/pxf/lib
+chown pxf:pxf /usr/lib/pxf/lib/pxf-tarantool*
 
-cp msgpack-core-0.8.20.jar /usr/lib/pxf/lib/shared/
-chown pxf:pxf /usr/lib/pxf/lib/shared/msgpack-core-0.9.0.jar
+cp msgpack-core* /usr/lib/pxf/lib/shared/
+chown pxf:pxf /usr/lib/pxf/lib/shared/msgpack-core*
 
-cp cartridge-driver-0.4.3.jar /usr/lib/pxf/lib/shared/
-chown pxf:pxf /usr/lib/pxf/lib/shared/cartridge-driver-0.7.0
+cp cartridge-driver* /usr/lib/pxf/lib/shared/
+chown pxf:pxf /usr/lib/pxf/lib/shared/cartridge-driver*
 
 cp netty* /usr/lib/pxf/lib/shared/
 chown pxf:pxf /usr/lib/pxf/lib/shared/netty*
 ```
+
+***In case of update don't forget to remove OLD versions of libraries***
 
 Update profile.xml (`/var/lib/pxf/conf/pxf-profiles.xml`) by **adding** missing items from repository
 one (`pxf-tarantool/env/pxf-profiles.xml`)

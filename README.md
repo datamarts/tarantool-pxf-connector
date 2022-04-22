@@ -1,3 +1,5 @@
+Project is in active development and has been moved to https://repository.datamart.ru/datamarts/kafka-tarantool-loader
+
 # PXF Tarantool plugin
 
 [PXF](https://gpdb.docs.pivotal.io/6-8/pxf/overview_pxf.html) plugin to write data to Tarantool cluster.
